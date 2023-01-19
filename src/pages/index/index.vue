@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { toRef } from "vue";
+import { toRef, ref } from "vue";
 import useAppStore from "@/store/index";
 
 import carousel from "@/components/carousel/index.vue";
 import guess from "@/components/guess/index.vue";
 import entries from "./components/entries/index.vue";
-import "../../utils/http";
-import { http } from "@/utils/http";
+import { getHomeBannerApi } from "@/apis/home";
+import { BannerItem } from "@/types/home";
 
 // pinia
 const appStore = useAppStore();
@@ -14,39 +14,6 @@ const safeArea = toRef(appStore, "safeArea");
 
 // 初始数据
 let hasMore = $ref(true);
-
-const bannerData = [
-  {
-    id: "227415",
-    type: "1",
-    imgUrl:
-      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/slider_1.jpg",
-  },
-  {
-    id: "326416",
-    type: "4",
-    imgUrl:
-      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/slider_2.jpg",
-  },
-  {
-    id: "163424",
-    type: "2",
-    imgUrl:
-      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/slider_3.jpg",
-  },
-  {
-    id: "223413",
-    type: "1",
-    imgUrl:
-      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/slider_4.jpg",
-  },
-  {
-    id: "423426",
-    type: "3",
-    imgUrl:
-      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/slider_5.jpg",
-  },
-];
 
 // 跳转到搜索页面
 const goSearch = () => {
@@ -63,41 +30,12 @@ const nextVersion = () => {
   uni.showToast({ title: "等待下一个版本哦~", icon: "none" });
 };
 
-// -------------------------------------
-
-/**
- * banner 返回值类型
- */
-interface BannerItem {
-  /**
-   * 跳转链接
-   */
-  hrefUrl: string;
-  /**
-   * id
-   */
-  id: string;
-  /**
-   * banner链接
-   */
-  imgUrl: string;
-  /**
-   * 跳转类型1、页面2、H5 3、小程序（小程序使用）
-   */
-  type: number;
-}
-
-const loadData = async () => {
-  const res = await http<BannerItem[]>({
-    method: "GET",
-    url: "https://pcapi-xiaotuxian-front-devtest.itheima.net/home/banner",
-    data: {
-      distributionSite: 1,
-    },
-  });
-  console.log("http", res[0].hrefUrl);
+// 获取轮播图列表
+const bannerList = ref<BannerItem[]>([]);
+const getHomeBanner = async () => {
+  bannerList.value = await getHomeBannerApi();
 };
-loadData();
+getHomeBanner();
 </script>
 
 <template>
@@ -127,7 +65,7 @@ loadData();
     :show-scrollbar="false"
   >
     <!-- 焦点图 -->
-    <carousel style="height: 280rpx" :source="bannerData"></carousel>
+    <carousel style="height: 280rpx" :source="bannerList"></carousel>
     <!-- 前台类目 -->
     <entries :source="[]"></entries>
     <!-- 推荐专区 -->

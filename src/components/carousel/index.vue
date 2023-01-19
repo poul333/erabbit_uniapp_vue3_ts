@@ -1,18 +1,16 @@
 <script setup lang="ts">
-interface bannerType {
-  [index: number]: { id: string; type: string; imgUrl: string }
-}
+import { BannerItem } from "@/types/home";
 
 defineProps<{
-  source: bannerType
-}>()
+  source: BannerItem[];
+}>();
 
-let activeIndex = $ref(0)
+let activeIndex = $ref(0);
 
 // 更新指示器状态
 const swiperChanged = (ev: WechatMiniprogram.SwiperChange) => {
-  activeIndex = ev.detail.current
-}
+  activeIndex = ev.detail.current;
+};
 </script>
 
 <template>
