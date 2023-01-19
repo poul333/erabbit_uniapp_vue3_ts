@@ -5,8 +5,20 @@ import useAppStore from "@/store/index";
 import carousel from "@/components/carousel/index.vue";
 import guess from "@/components/guess/index.vue";
 import entries from "./components/entries/index.vue";
-import { getHomeBannerApi } from "@/apis/home";
-import { BannerItem } from "@/types/home";
+import {
+  getHomeBannerApi,
+  getHomeCategoryMutliApi,
+  getHomeHotMutliApi,
+  getHomeNewApi,
+  getHomeGoodsGuessLikeApi,
+} from "@/apis/home";
+import {
+  BannerItem,
+  CategoryItem,
+  HotMutilItem,
+  NewItem,
+  GuessItem,
+} from "@/types/home";
 
 // pinia
 const appStore = useAppStore();
@@ -32,10 +44,24 @@ const nextVersion = () => {
 
 // 获取轮播图列表
 const bannerList = ref<BannerItem[]>([]);
-const getHomeBanner = async () => {
+// 获取前台分类列表
+const categoryList = ref<CategoryItem[]>([]);
+// 热门推荐列表
+const hotList = ref<HotMutilItem[]>([]);
+// 新鲜好物列表
+const newList = ref<NewItem[]>([]);
+// 猜你喜欢列表
+const guessList = ref<GuessItem[]>([]);
+const loadData = async () => {
   bannerList.value = await getHomeBannerApi();
+  categoryList.value = await getHomeCategoryMutliApi();
+  hotList.value = await getHomeHotMutliApi();
+  newList.value = await getHomeNewApi();
+  const guessRes = await getHomeGoodsGuessLikeApi({ page: 1, pageSize: 10 });
+  guessList.value = guessRes.items;
+  // console.log(res);
 };
-getHomeBanner();
+loadData();
 </script>
 
 <template>
@@ -67,70 +93,23 @@ getHomeBanner();
     <!-- 焦点图 -->
     <carousel style="height: 280rpx" :source="bannerList"></carousel>
     <!-- 前台类目 -->
-    <entries :source="[]"></entries>
+    <entries :source="categoryList"></entries>
     <!-- 推荐专区 -->
     <view class="panel recommend">
-      <view class="item">
-        <view class="title">特惠推荐<text>精选全攻略</text></view>
+      <view class="item" v-for="item in hotList" :key="item.id">
+        <view class="title">
+          {{ item.title }}<text>{{ item.alt }}</text></view
+        >
         <navigator
           hover-class="none"
-          url="/pages/recommend/index?type=1"
+          :url="`/pages/recommend/index?type=${item.id}`"
           class="cards"
         >
           <image
             mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_1.jpg"
-          ></image>
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_2.jpg"
-          ></image>
-        </navigator>
-      </view>
-      <view class="item">
-        <view class="title">爆款推荐<text>最受欢迎</text></view>
-        <navigator
-          hover-class="none"
-          url="/pages/recommend/index?type=2"
-          class="cards"
-        >
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_3.jpg"
-          ></image>
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_4.jpg"
-          ></image>
-        </navigator>
-      </view>
-      <view class="item">
-        <view class="title">一站买全 <text>精选优选</text></view>
-        <navigator
-          hover-class="none"
-          url="/pages/recommend/index?type=1"
-          class="cards"
-        >
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_5.jpg"
-          ></image>
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_6.jpg"
-          ></image>
-        </navigator>
-      </view>
-      <view class="item" @tap="nextVersion">
-        <view class="title"> 领券中心 <text>超值优惠券</text> </view>
-        <navigator hover-class="none" class="cards">
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_7.jpg"
-          ></image>
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_8.jpg"
+            v-for="img in item.pictures"
+            :key="img"
+            :src="img"
           ></image>
         </navigator>
       </view>
@@ -147,37 +126,17 @@ getHomeBanner();
         >
       </view>
       <view class="cards">
-        <navigator hover-class="none" url="/pages/goods/index">
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_9.jpg"
-          ></image>
-          <view class="name">香水小样</view>
-          <view class="price"> <text class="small">¥</text>299 </view>
-        </navigator>
-        <navigator hover-class="none" url="/pages/goods/index">
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_10.jpg"
-          ></image>
-          <view class="name">红外体温仪</view>
-          <view class="price"> <text class="small">¥</text>266 </view>
-        </navigator>
-        <navigator hover-class="none" url="/pages/goods/index">
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_11.jpg"
-          ></image>
-          <view class="name">美的电饭煲美的电饭煲</view>
-          <view class="price"> <text class="small">¥</text>199 </view>
-        </navigator>
-        <navigator hover-class="none" url="/pages/goods/index">
-          <image
-            mode="aspectFit"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_small_12.jpg"
-          ></image>
-          <view class="name">过滤水壶</view>
-          <view class="price"> <text class="small">¥</text>99 </view>
+        <navigator
+          v-for="item in newList"
+          :key="item.id"
+          hover-class="none"
+          :url="`/pages/goods/index?id=${item.id}`"
+        >
+          <image mode="aspectFit" :src="item.picture"></image>
+          <view class="name">{{ item.name }}</view>
+          <view class="price">
+            <text class="small">¥</text>{{ item.price }}
+          </view>
         </navigator>
       </view>
     </view>
@@ -256,7 +215,7 @@ getHomeBanner();
       </view>
     </view>
     <!-- 猜你喜欢 -->
-    <guess :source="[]"></guess>
+    <guess :source="guessList"></guess>
     <view class="loading" v-if="hasMore">正在加载...</view>
   </scroll-view>
 </template>

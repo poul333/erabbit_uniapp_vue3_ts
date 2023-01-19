@@ -8,12 +8,18 @@ interface ApiRes {
 
 // 添加请求拦截器
 uni.addInterceptor("request", {
-  invoke(args) {
+  invoke(args: UniApp.RequestOptions) {
     // 如果不是 http 开头，才进行 URL 拼接
     if (!(args.url as string).startsWith("http")) {
       // 拼接请求基地址
       args.url = baseURL + args.url;
     }
+
+    // 小程序端调用，请求头中 header 中添加：'source-client': 'miniapp'
+    args.header = {
+      ...args.header,
+      "source-client": "miniapp",
+    };
   },
 });
 
