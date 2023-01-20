@@ -201,7 +201,7 @@ export interface GoodsItem {
   /**
    * 总数量
    */
-  counts: string;
+  counts: number;
   /**
    * 商品集合
    */
@@ -209,15 +209,15 @@ export interface GoodsItem {
   /**
    * 页码
    */
-  page: string;
+  page: number;
   /**
    * 总页数
    */
-  pages: string;
+  pages: number;
   /**
    * 页容量
    */
-  pageSize: string;
+  pageSize: number;
 }
 
 /**
