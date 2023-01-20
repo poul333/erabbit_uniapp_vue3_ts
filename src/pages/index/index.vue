@@ -57,11 +57,30 @@ const loadData = async () => {
   categoryList.value = await getHomeCategoryMutliApi();
   hotList.value = await getHomeHotMutliApi();
   newList.value = await getHomeNewApi();
-  const guessRes = await getHomeGoodsGuessLikeApi({ page: 1, pageSize: 10 });
-  guessList.value = guessRes.items;
+  getGuessList();
   // console.log(res);
 };
 loadData();
+
+let page = 1; // page 参数变量
+const counts = ref(0); // 总条数
+// 获取猜你喜欢列表
+const getGuessList = async () => {
+  const guessRes = await getHomeGoodsGuessLikeApi({
+    page,
+    pageSize: 10,
+  });
+  guessList.value.push(...guessRes.items); // 分页数据使用数组追加，触底加载数据后保留之前列表数据
+  counts.value = guessRes.counts;
+};
+// 猜你喜欢列表触底事件回调 => 实现触底加载数据
+const onScrolltolower = () => {
+  // 数据加载完毕，不再请求
+  if (counts.value === guessList.value.length)
+    return uni.showToast({ icon: "none", title: "没有更多了" });
+  page++; // 下拉刷新实现 page 增加
+  getGuessList();
+};
 </script>
 
 <template>
@@ -89,6 +108,7 @@ loadData();
     enhanced
     refresher-background="#f7f7f8"
     :show-scrollbar="false"
+    @scrolltolower="onScrolltolower"
   >
     <!-- 焦点图 -->
     <carousel style="height: 280rpx" :source="bannerList"></carousel>
@@ -216,7 +236,7 @@ loadData();
     </view>
     <!-- 猜你喜欢 -->
     <guess :source="guessList"></guess>
-    <view class="loading" v-if="hasMore">正在加载...</view>
+    <view class="loading" v-if="counts !== guessList.length">正在加载...</view>
   </scroll-view>
 </template>
 
