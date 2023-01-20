@@ -158,3 +158,104 @@ export interface GuessItem {
    */
   price: number;
 }
+
+/**
+ * 推荐 接口参数类型
+ */
+export interface RecommendData {
+  subType?: string;
+  pageSize?: number;
+  page?: number;
+}
+
+/**
+ * 推荐商品 返回值类型
+ */
+export interface RecommendResultType {
+  /**
+   * 活动图片
+   */
+  bannerPicture: string;
+  /**
+   * 活动对应的商品集合
+   */
+  goodsItems: GoodsItem[];
+  /**
+   * id信息
+   */
+  id: string;
+  /**
+   * 子类选项集合
+   */
+  subTypes: SubType[];
+  /**
+   * 活动标题：特惠推荐
+   */
+  title: string;
+}
+
+/**
+ * 活动对应的商品集合项
+ */
+export interface GoodsItem {
+  /**
+   * 总数量
+   */
+  counts: string;
+  /**
+   * 商品集合
+   */
+  items: Item[];
+  /**
+   * 页码
+   */
+  page: string;
+  /**
+   * 总页数
+   */
+  pages: string;
+  /**
+   * 页容量
+   */
+  pageSize: string;
+}
+
+/**
+ * 商品项
+ */
+export interface Item {
+  /**
+   * 商品描述
+   */
+  desc: string;
+  /**
+   * 商品id
+   */
+  id: string;
+  /**
+   * 商品名称
+   */
+  name: string;
+  /**
+   * 商品图片
+   */
+  picture: string;
+  /**
+   * 商品价格
+   */
+  price: number;
+}
+
+/**
+ * 子类选项
+ */
+export interface SubType {
+  /**
+   * 子类选项id
+   */
+  id: string;
+  /**
+   * 子类选项名称
+   */
+  title: string;
+}

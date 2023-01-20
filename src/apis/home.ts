@@ -6,6 +6,8 @@ import {
   NewItem,
   PageAndPageSizeType,
   HomeGoodsGuessLikeResult,
+  RecommendData,
+  RecommendResultType,
 } from "@/types/home";
 
 /**
@@ -64,5 +66,32 @@ export const getHomeGoodsGuessLikeApi = (data: PageAndPageSizeType) =>
   http<HomeGoodsGuessLikeResult>({
     method: "GET",
     url: "/home/goods/guessLike",
+    data,
+  });
+
+/**
+ *  特惠推荐
+ * @param subType 一站买全 Tab 项的 id，默认查询全部 Tab 项的第 1 页数据
+ * @param pageSize  分页数据每页条数
+ * @param page  分页页码
+ * @returns
+ */
+export const getHomePreferenceMutliApi = (data: RecommendData) =>
+  http<RecommendResultType>({
+    method: "GET",
+    url: "/home/preference/mutli",
+    data,
+  });
+
+/**
+ * 爆款推荐
+ * @param url 请求地址
+ * @param data 推荐请求参数
+ * @returns
+ */
+export const getHomeRecommendApi = (url: string, data: RecommendData) =>
+  http<RecommendResultType>({
+    method: "GET",
+    url,
     data,
   });

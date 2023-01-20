@@ -1,67 +1,116 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from "vue";
 
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad } from "@dcloudio/uni-app";
+import { getHomePreferenceMutliApi, getHomeRecommendApi } from "@/apis/home";
+import { SubType } from "@/types/home";
 
 interface metaType {
-  title: string
-  coverPath: string
-  tabs: string[]
+  title: string;
+  coverPath: string;
+  tabs: string[];
 }
 
 const metaMap = reactive<{ [key: string]: metaType }>({
   1: {
-    title: '特惠推荐',
+    title: "特惠推荐",
     coverPath:
-      'https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/recommend_1.jpg',
-    tabs: ['价格', '折扣', '筛选'],
+      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/recommend_1.jpg",
+    tabs: ["价格", "折扣", "筛选"],
   },
   2: {
-    title: '爆款推荐',
+    title: "爆款推荐",
     coverPath:
-      'https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/recommend_2.jpg',
-    tabs: ['24小时热搜', '热销总榜', '人气周榜'],
+      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/recommend_2.jpg",
+    tabs: ["24小时热搜", "热销总榜", "人气周榜"],
   },
   3: {
-    title: '一站买全',
+    title: "一站买全",
     coverPath:
-      'https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/recommend_3.jpg',
-    tabs: ['搞定熊孩子', '家里不凌乱', '让音质更出众'],
+      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/recommend_3.jpg",
+    tabs: ["搞定熊孩子", "家里不凌乱", "让音质更出众"],
   },
   5: {
-    title: '新鲜好物',
+    title: "新鲜好物",
     coverPath:
-      'https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/recommend_4.jpg',
-    tabs: ['抢先尝新', '新品预告'],
+      "https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/recommend_4.jpg",
+    tabs: ["抢先尝新", "新品预告"],
   },
-})
+});
 
-let type = $ref('1')
-let meta = $ref(metaMap[type])
+let type = $ref("1");
+let meta = $ref(metaMap[type]);
 
 onLoad(({ type }) => {
-  if (type) meta = metaMap[type]
-})
+  if (type) meta = metaMap[type];
+});
 
 // 动态更新导航栏标题
 uni.setNavigationBarTitle({
   title: meta.title,
-})
+});
+
+// ----------------------------------------------
+
+// 统一管理推荐请求
+const urlMap = [
+  { type: "1", title: "特惠推荐", url: "/home/preference/mutli" },
+  { type: "2", title: "爆款推荐", url: "/home/inVogue/mutli" },
+  { type: "3", title: "一站买全", url: "/home/oneStop/mutli" },
+  { type: "4", title: "新鲜好物", url: "/home/new/mutli" }, // 后端未提供，暂用新鲜好物url
+  { type: "5", title: "新鲜好物", url: "/home/new/mutli" },
+];
+
+// 保存封面图
+const bannerPicture = ref("");
+// 保存tabs
+const subTypes = ref<SubType[]>([]);
+onLoad(async ({ type }) => {
+  // 通过 type 查找对应映射的 url
+  const currUrlMap = urlMap.find((v) => v.type === type)?.url;
+  // 调用通用的推荐接口
+  const res = await getHomeRecommendApi(currUrlMap as string, {});
+  // 动态更新导航栏标题
+  uni.setNavigationBarTitle({
+    title: res.title,
+  });
+  bannerPicture.value = res.bannerPicture;
+  subTypes.value = res.subTypes;
+
+  // // '1' 表示特惠推荐
+  // if (type === "1") {
+  //   const res = await getHomePreferenceMutliApi({});
+  //   // 动态设置页面标题
+  //   uni.setNavigationBarTitle({
+  //     title: res.title,
+  //   });
+  //   bannerPicture.value = res.bannerPicture;
+  //   subTypes.value = res.subTypes;
+  // } else if (type === "2") {
+  //   // '2' => 爆款推荐
+  //   const res = await getHomeRecommendApi("", {});
+  //   uni.setNavigationBarTitle({
+  //     title: res.title,
+  //   });
+  //   bannerPicture.value = res.bannerPicture;
+  //   subTypes.value = res.subTypes;
+  // }
+});
 </script>
 
 <template>
   <view class="viewport">
     <!-- 推荐封面图 -->
     <view class="cover">
-      <image :src="meta.coverPath"></image>
+      <image :src="bannerPicture"></image>
     </view>
     <view class="tabs">
       <text
         class="text"
-        v-for="(item, index) in meta.tabs"
-        :key="item"
+        v-for="(item, index) in subTypes"
+        :key="item.id"
         :class="{ active: index === 0 }"
-        >{{ item }}</text
+        >{{ item.title }}</text
       >
     </view>
     <scroll-view scroll-y enhanced :show-scrollbar="false" class="scroll-view">
@@ -246,7 +295,7 @@ page {
 }
 
 .tabs .active::after {
-  content: '';
+  content: "";
   width: 40rpx;
   height: 4rpx;
   transform: translate(-50%);
