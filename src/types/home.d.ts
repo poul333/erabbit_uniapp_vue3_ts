@@ -62,6 +62,10 @@ export interface HotMutilItem {
    * 标题
    */
   title: string;
+  /**
+   * 推荐类型
+   */
+  type: string;
 }
 
 /**
