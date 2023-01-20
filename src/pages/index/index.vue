@@ -53,10 +53,24 @@ const newList = ref<NewItem[]>([]);
 // 猜你喜欢列表
 const guessList = ref<GuessItem[]>([]);
 const loadData = async () => {
-  bannerList.value = await getHomeBannerApi();
-  categoryList.value = await getHomeCategoryMutliApi();
-  hotList.value = await getHomeHotMutliApi();
-  newList.value = await getHomeNewApi();
+  // bannerList.value = await getHomeBannerApi();
+  // categoryList.value = await getHomeCategoryMutliApi();
+  // hotList.value = await getHomeHotMutliApi();
+  // newList.value = await getHomeNewApi();
+
+  // 让请求同步发送
+  const res = await Promise.all([
+    getHomeBannerApi(),
+    getHomeCategoryMutliApi(),
+    getHomeHotMutliApi(),
+    getHomeNewApi(),
+  ]);
+  // 进行赋值
+  bannerList.value = res[0];
+  categoryList.value = res[1];
+  hotList.value = res[2];
+  newList.value = res[3];
+
   getGuessList();
   // console.log(res);
 };
@@ -80,6 +94,20 @@ const onScrolltolower = () => {
     return uni.showToast({ icon: "none", title: "没有更多了" });
   page++; // 下拉刷新实现 page 增加
   getGuessList();
+};
+
+// 下拉刷新
+const triggered = ref(false);
+const onRefresherrefresh = async () => {
+  triggered.value = true;
+  bannerList.value = [];
+  categoryList.value = [];
+  hotList.value = [];
+  newList.value = [];
+  guessList.value = [];
+  page = 1;
+  await loadData();
+  triggered.value = false;
 };
 </script>
 
@@ -109,6 +137,8 @@ const onScrolltolower = () => {
     refresher-background="#f7f7f8"
     :show-scrollbar="false"
     @scrolltolower="onScrolltolower"
+    @refresherrefresh="onRefresherrefresh"
+    :refresher-triggered="triggered"
   >
     <!-- 焦点图 -->
     <carousel style="height: 280rpx" :source="bannerList"></carousel>
