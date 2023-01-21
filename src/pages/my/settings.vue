@@ -1,5 +1,6 @@
 <script setup lang="ts">
-//
+import { useMemberStore } from "@/store/member";
+const memberStore = useMemberStore();
 </script>
 
 <template>
@@ -19,7 +20,7 @@
   </navigator> -->
 
     <!-- 操作列表 -->
-    <view class="list">
+    <view v-if="memberStore.isLogin" class="list">
       <navigator url="./address/index" hover-class="none" class="item arrow"
         >我的收货地址</navigator
       >
@@ -30,7 +31,7 @@
       hover-class="none"
       class="item arrow">我的兴趣</navigator> -->
     </view>
-    <view class="list">
+    <view v-if="memberStore.isLogin" class="list">
       <!-- <navigator
       hover-class="none"
       class="item arrow">会员中心</navigator> -->
@@ -78,9 +79,9 @@ button::after {
   position: absolute;
   top: 50%;
 
-  content: '\e6c2';
+  content: "\e6c2";
   color: #ccc;
-  font-family: 'erabbit' !important;
+  font-family: "erabbit" !important;
   font-size: 32rpx;
   transform: translateY(-50%);
 }

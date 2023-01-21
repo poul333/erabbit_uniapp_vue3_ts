@@ -1,3 +1,5 @@
+import { useMemberStore } from "@/store/member";
+
 const baseURL = "https://pcapi-xiaotuxian-front-devtest.itheima.net";
 
 interface ApiRes {
@@ -20,6 +22,12 @@ uni.addInterceptor("request", {
       ...args.header,
       "source-client": "miniapp",
     };
+    // 携带token
+    const memberStore = useMemberStore();
+    const token = memberStore.profile.token;
+    if (token) {
+      args.header.Authorization = token;
+    }
   },
 });
 

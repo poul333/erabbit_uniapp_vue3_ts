@@ -23,6 +23,7 @@ specifiers:
   cz-conventional-changelog: ^3.3.0
   husky: ^8.0.0
   pinia: ^2.0.14
+  pinia-plugin-persistedstate: ^3.0.2
   sass: ^1.51.0
   typescript: ^4.6.3
   vite: ^2.9.6
@@ -45,6 +46,7 @@ dependencies:
   '@dcloudio/uni-quickapp-webview': 3.0.0-alpha-3041020220516002_vue@3.2.40
   '@dcloudio/uni-ui': 1.4.22
   pinia: 2.0.23_bfjwoga25wxjazzogo7o372nwq
+  pinia-plugin-persistedstate: 3.0.2_pinia@2.0.23
   vue: 3.2.40
   vue-i18n: 9.2.2_vue@3.2.40
 
@@ -2917,6 +2919,14 @@ packages:
   /pify/2.3.0:
     resolution: {integrity: sha512-udgsAY+fTnvv7kI7aaxbqwWNb0AHiB0qBO89PZKPkoTmGOgdbrHDKD+0B2X4uTfJ/FT1R09r9gTsjUjNJotuog==}
     engines: {node: '>=0.10.0'}
+
+  /pinia-plugin-persistedstate/3.0.2_pinia@2.0.23:
+    resolution: {integrity: sha512-84vPyUhPA/8Pr+1mT1ioNb2d8z4tvdgYRqMQf8xyauOVBKjo0ZcRBwPQBV7ZAJG43Kwar43nXG2jU+ZMvAFFRQ==}
+    peerDependencies:
+      pinia: ^2.0.0
+    dependencies:
+      pinia: 2.0.23_bfjwoga25wxjazzogo7o372nwq
+    dev: false
 
   /pinia/2.0.23_bfjwoga25wxjazzogo7o372nwq:
     resolution: {integrity: sha512-N15hFf4o5STrxpNrib1IEb1GOArvPYf1zPvQVRGOO1G1d74Ak0J0lVyalX/SmrzdT4Q0nlEFjbURsmBmIGUR5Q==}

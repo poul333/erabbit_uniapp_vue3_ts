@@ -1,9 +1,40 @@
 <script setup lang="ts">
-const getPhoneNumber = () => {}
+import { postLoginWxMinApi, postLoginWxMinSimpleApi } from "@/apis/login";
+import { onLoad } from "@dcloudio/uni-app";
+import { useMemberStore } from "@/store/member";
+import { storeToRefs } from "pinia";
+
+const getPhoneNumber = () => {};
 // 提示消息
 const nextVersion = () => {
-  uni.showToast({ title: '等下一个版本哦', icon: 'none' })
-}
+  uni.showToast({ title: "等下一个版本哦", icon: "none" });
+};
+
+let code = "";
+onLoad(async () => {
+  const res = await wx.login();
+  code = res.code;
+});
+// 登录
+const onGetphonenumber = async (ev: any) => {
+  const { encryptedData, iv } = ev.detail;
+  const res = await postLoginWxMinApi({
+    encryptedData,
+    iv,
+    code,
+  });
+};
+
+const memberStore = useMemberStore();
+// 登录_内测版
+const onGetphonenumberSimple = async () => {
+  const res = await postLoginWxMinSimpleApi("13535353535");
+  // 保存用户信息
+  memberStore.setProfile(res);
+  uni.showToast({ icon: "success", title: "登录成功" });
+  // 页面跳转
+  uni.switchTab({ url: "/pages/my/index" });
+};
 </script>
 
 <template>
@@ -14,9 +45,18 @@ const nextVersion = () => {
       ></image>
     </view>
     <view class="login">
-      <button class="button phone">
+      <button
+        class="button phone"
+        open-type="getPhoneNumber"
+        @getphonenumber="onGetphonenumber"
+        style="margin-bottom: 10px"
+      >
         <text class="icon icon-phone"></text>
         手机号快捷登录
+      </button>
+      <button class="button phone" @tap="onGetphonenumberSimple">
+        <text class="icon icon-phone"></text>
+        手机号快捷登录_内测版
       </button>
       <view class="extra">
         <view class="caption">
