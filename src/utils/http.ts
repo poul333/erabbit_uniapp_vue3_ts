@@ -31,6 +31,29 @@ uni.addInterceptor("request", {
   },
 });
 
+// 拦截上传文件的请求
+uni.addInterceptor("uploadFile", {
+  invoke(args: UniApp.RequestOptions) {
+    // 如果不是 http 开头，才进行 URL 拼接
+    if (!(args.url as string).startsWith("http")) {
+      // 拼接请求基地址
+      args.url = baseURL + args.url;
+    }
+
+    // 小程序端调用，请求头中 header 中添加：'source-client': 'miniapp'
+    args.header = {
+      ...args.header,
+      "source-client": "miniapp",
+    };
+    // 携带token
+    const memberStore = useMemberStore();
+    const token = memberStore.profile.token;
+    if (token) {
+      args.header.Authorization = token;
+    }
+  },
+});
+
 // 封装请求方法
 export const http = <T>(options: UniApp.RequestOptions) => {
   // 返回 Promise 对象

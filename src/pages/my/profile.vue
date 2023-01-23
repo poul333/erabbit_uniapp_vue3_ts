@@ -1,17 +1,49 @@
 <script setup lang="ts">
-import { toRef } from 'vue'
-import useAppStore from '@/store'
+import { toRef, ref } from "vue";
+import useAppStore from "@/store";
+import { onLoad } from "@dcloudio/uni-app";
+import { getMemberProfile } from "@/apis/profile";
+import { MemberProfileResult } from "@/types/profile";
+import { useMemberStore } from "@/store/member";
 
-const appStore = useAppStore()
-const safeArea = toRef(appStore, 'safeArea')
+const appStore = useAppStore();
+const safeArea = toRef(appStore, "safeArea");
 
 const goBack = () => {
-  uni.navigateBack({})
-}
+  uni.navigateBack({});
+};
 
 const chooseImage = () => {
-  uni.chooseImage({})
-}
+  uni.chooseImage({});
+};
+
+const MemberProfile = ref({} as MemberProfileResult);
+onLoad(async () => {
+  MemberProfile.value = await getMemberProfile();
+});
+
+const memberStore = useMemberStore();
+
+// 修改头像
+const changeAvatar = async () => {
+  const res = (await uni.chooseImage({ count: 1 })) as any;
+  // 小程序不是通过 request 上传文件， 而是通过 uploadFile 进行上传
+  uni.uploadFile({
+    // 上传图片
+    url: "/member/profile/avatar",
+    name: "file",
+    filePath: res.tempFilePaths[0],
+    success: (ures) => {
+      console.log(ures);
+      // 更新用户头像
+      MemberProfile.value.avatar = res.tempFilePaths[0];
+      // 更新 pinia 中存储的头像
+      memberStore.profile.avatar = res.tempFilePaths[0];
+      // 提示
+      uni.showToast({ icon: "success", title: "更换头像成功" });
+    },
+  });
+};
 </script>
 
 <template>
@@ -22,10 +54,11 @@ const chooseImage = () => {
     </view>
     <scroll-view scroll-y>
       <!-- 头像 -->
-      <view class="avatar">
+      <view @tap="changeAvatar" class="avatar">
         <image
           @tap="chooseImage"
-          src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/avatar_3.jpg"
+          :src="MemberProfile.avatar"
+          mode="'aspectFit'"
         />
         <text>点击修改头像</text>
       </view>
@@ -33,38 +66,48 @@ const chooseImage = () => {
       <view class="form">
         <view class="form-item">
           <text class="label">账号</text>
-          <input value="26219453547" />
+          <input :value="MemberProfile.account" />
         </view>
         <view class="form-item">
           <text class="label">昵称</text>
-          <input value="张三" />
+          <input :value="MemberProfile.nickname" />
         </view>
         <view class="form-item">
           <text class="label">性别</text>
           <radio-group>
             <label class="radio">
-              <radio value="男" color="#27ba9b" :checked="true" /> 男
+              <radio
+                value="男"
+                color="#27ba9b"
+                :checked="MemberProfile.gender === '男'"
+              />
+              男
             </label>
             <label class="radio">
-              <radio value="女" color="#27ba9b" /> 女
+              <radio
+                value="女"
+                color="#27ba9b"
+                :checked="MemberProfile.gender === '女'"
+              />
+              女
             </label>
           </radio-group>
         </view>
         <view class="form-item">
           <text class="label">出生日期</text>
-          <picker mode="date" start="2015-09-01" end="2017-09-01">
-            <view>2021-01-02</view>
+          <picker mode="date" start="1950-09-01" end="2023-09-01">
+            <view>{{ MemberProfile.birthday || "请选择日期" }}</view>
           </picker>
         </view>
         <view class="form-item">
           <text class="label">城市</text>
           <picker mode="region">
-            <view>北京</view>
+            <view>{{ MemberProfile.fullLocation || "请选择城市" }}</view>
           </picker>
         </view>
         <view class="form-item">
           <text class="label">职业</text>
-          <input value="伙夫" />
+          <input :value="MemberProfile.profession" placeholder="请填写职业" />
         </view>
       </view>
       <!-- 提交按钮 -->

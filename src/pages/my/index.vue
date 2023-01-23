@@ -64,6 +64,10 @@ onReady(() => {
 
 const memberStore = useMemberStore();
 const { profile, isLogin } = storeToRefs(memberStore);
+// 跳转页面
+const goToProfile = () => {
+  uni.navigateTo({ url: "/pages/my/profile" });
+};
 </script>
 
 <template>
@@ -72,9 +76,24 @@ const { profile, isLogin } = storeToRefs(memberStore);
       <!-- 个人资料 -->
       <view class="profile">
         <view class="overview">
-          <image class="avatar" :src="profile.avatar"></image>
+          <navigator v-if="isLogin" url="/pages/my/profile" hover-class="none">
+            <image
+              mode="aspectFill"
+              class="avatar"
+              :src="profile.avatar"
+            ></image>
+          </navigator>
+          <!-- 未登录：点击头像跳转登录页 -->
+          <navigator v-else url="/pages/login/index" hover-class="none">
+            <image
+              class="avatar"
+              src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/avatar_3.jpg"
+            ></image>
+          </navigator>
           <view class="meta">
-            <view v-if="isLogin" class="nickname">{{ profile.nickname }}</view>
+            <view @tap="goToProfile" v-if="isLogin" class="nickname">{{
+              profile.nickname
+            }}</view>
             <navigator
               v-else
               url="/pages/login/index"
