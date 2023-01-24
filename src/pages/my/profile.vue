@@ -2,8 +2,8 @@
 import { toRef, ref } from "vue";
 import useAppStore from "@/store";
 import { onLoad } from "@dcloudio/uni-app";
-import { getMemberProfile } from "@/apis/profile";
-import { MemberProfileResult } from "@/types/profile";
+import { getMemberProfile, putMemberProfile } from "@/apis/profile";
+import { Gender, GetMemberProfileResult } from "@/types/profile";
 import { useMemberStore } from "@/store/member";
 
 const appStore = useAppStore();
@@ -17,9 +17,12 @@ const chooseImage = () => {
   uni.chooseImage({});
 };
 
-const MemberProfile = ref({} as MemberProfileResult);
+const MemberProfile = ref({} as GetMemberProfileResult);
 onLoad(async () => {
   MemberProfile.value = await getMemberProfile();
+  // 同步修改头像和昵称
+  memberStore.profile.avatar = MemberProfile.value.avatar;
+  memberStore.profile.nickname = MemberProfile.value.nickname;
 });
 
 const memberStore = useMemberStore();
@@ -44,6 +47,46 @@ const changeAvatar = async () => {
     },
   });
 };
+
+const submitForm = async () => {
+  // 获取后端修改所需字段
+  const { birthday, gender, nickname, profession } = MemberProfile.value;
+  // 🔔 数组按下标解构 省 市 区 的编码
+  const [provinceCode, cityCode, countyCode] = fullLocationCode;
+  await putMemberProfile({
+    birthday,
+    gender,
+    nickname,
+    profession,
+    provinceCode,
+    cityCode,
+    countyCode,
+  });
+  uni.showToast({ title: "修改成功", icon: "success" });
+  // 修改 pinia 中昵称
+  memberStore.profile.nickname = nickname;
+  // 后退一页
+  uni.navigateBack({});
+};
+
+// 修改性别
+const genderChange = (ev: WechatMiniprogram.RadioGroupChange) => {
+  MemberProfile.value.gender = ev.detail.value as Gender;
+};
+
+// 修改生日
+const birthdayChange = (ev: WechatMiniprogram.PickerChange) => {
+  MemberProfile.value.birthday = ev.detail.value as string;
+};
+
+let fullLocationCode: string[] = [];
+const fullLocationChange = (ev: WechatMiniprogram.PickerChange) => {
+  // 用于界面展示的 省市区的名称，仅本地展示，不用于网络请求
+  // PS: string[] 能兼容 [string, string, string] 类型
+  MemberProfile.value.fullLocation = (ev.detail.value as string[]).join("");
+  // 用于接口参数的 省市区的编码
+  fullLocationCode = ev.detail.code;
+};
 </script>
 
 <template>
@@ -66,15 +109,15 @@ const changeAvatar = async () => {
       <view class="form">
         <view class="form-item">
           <text class="label">账号</text>
-          <input :value="MemberProfile.account" />
+          <text>{{ MemberProfile.account }}</text>
         </view>
         <view class="form-item">
           <text class="label">昵称</text>
-          <input :value="MemberProfile.nickname" />
+          <input v-model="MemberProfile.nickname" />
         </view>
         <view class="form-item">
           <text class="label">性别</text>
-          <radio-group>
+          <radio-group @change="genderChange">
             <label class="radio">
               <radio
                 value="男"
@@ -95,23 +138,28 @@ const changeAvatar = async () => {
         </view>
         <view class="form-item">
           <text class="label">出生日期</text>
-          <picker mode="date" start="1950-09-01" end="2023-09-01">
+          <picker
+            @change="birthdayChange"
+            mode="date"
+            start="1950-09-01"
+            end="2023-09-01"
+          >
             <view>{{ MemberProfile.birthday || "请选择日期" }}</view>
           </picker>
         </view>
         <view class="form-item">
           <text class="label">城市</text>
-          <picker mode="region">
+          <picker @change="fullLocationChange" mode="region">
             <view>{{ MemberProfile.fullLocation || "请选择城市" }}</view>
           </picker>
         </view>
         <view class="form-item">
           <text class="label">职业</text>
-          <input :value="MemberProfile.profession" placeholder="请填写职业" />
+          <input v-model="MemberProfile.profession" placeholder="请填写职业" />
         </view>
       </view>
       <!-- 提交按钮 -->
-      <view class="button">保 存</view>
+      <view @tap="submitForm" class="button">保 存</view>
     </scroll-view>
   </view>
 </template>
