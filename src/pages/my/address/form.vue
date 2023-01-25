@@ -1,11 +1,66 @@
 <script setup lang="ts">
-import { onLoad } from '@dcloudio/uni-app'
+import {
+  getMemberAddressById,
+  postMemberAddress,
+  putMemberAddress,
+} from "@/apis/address";
+import { postMemberAddressData } from "@/types/address";
+import { onLoad } from "@dcloudio/uni-app";
+import { reactive, ref } from "vue";
 
 onLoad(({ id }) => {
   uni.setNavigationBarTitle({
-    title: id ? '修改地址' : '新建地址',
-  })
-})
+    title: id ? "修改地址" : "新建地址",
+  });
+});
+
+const form = reactive({
+  isDefault: 0,
+} as postMemberAddressData);
+// 收集界面展示的地址
+const fullLocation = ref<string | undefined>();
+const regionChange = (ev: WechatMiniprogram.PickerChange) => {
+  // 收集省市区编码
+  const [provinceCode, cityCode, countyCode] = ev.detail.code;
+  // form.postalCode = provinceCode;
+  // form.cityCode = cityCode;
+  // form.countyCode = countyCode;
+  // ---------使用合并对象简写
+  Object.assign(form, {
+    provinceCode,
+    cityCode,
+    countyCode,
+    postalCode: ev.detail.postcode, // 邮政编码
+  });
+  // 收集界面展示的地址
+  fullLocation.value = (ev.detail.value as string[]).join("");
+};
+
+// 是否为默认地址
+// 与原生的 switch 组件和事件冲突导致类型报错，所以使用联合类型和类型断言
+const isDefaultChange = (ev: WechatMiniprogram.SwitchChange | Event) => {
+  form.isDefault = (ev as WechatMiniprogram.SwitchChange).detail.value ? 1 : 0;
+};
+
+const submitForm = async () => {
+  // 如果有id，为修改，无id， 为新增
+  if (addressId.value) {
+    await putMemberAddress(addressId.value, form);
+  } else {
+    await postMemberAddress(form);
+  }
+  uni.showToast({ title: "操作成功" });
+  uni.navigateBack({});
+};
+
+const addressId = ref("");
+onLoad(async ({ id }) => {
+  if (id) {
+    addressId.value = id;
+    const res = await getMemberAddressById(id);
+    Object.assign(form, res);
+  }
+});
 </script>
 
 <template>
@@ -14,33 +69,48 @@ onLoad(({ id }) => {
     <view class="form">
       <view class="form-item">
         <text class="label">姓名</text>
-        <input placeholder-style="color: #888" placeholder="请填写收货人姓名" />
+        <input
+          v-model="form.receiver"
+          placeholder-style="color: #888"
+          placeholder="请填写收货人姓名"
+        />
       </view>
       <view class="form-item">
         <text class="label">手机号码</text>
         <input
+          v-model="form.contact"
           placeholder-style="color: #888"
           placeholder="请填写收货人手机号码"
         />
       </view>
       <view class="form-item">
         <text class="label">省/市/县 (区)</text>
-        <picker mode="region">
-          <!-- <view class="region"></view> -->
-          <view class="placeholder">请填写收货人所在城市</view>
+        <picker @change="regionChange" mode="region">
+          <view v-if="fullLocation" class="region">{{ fullLocation }}</view>
+          <view v-else class="placeholder"> 请填写收货人所在城市</view>
         </picker>
       </view>
       <view class="form-item">
         <text class="label">详细地址</text>
-        <input placeholder-style="color: #888" placeholder="街道、楼牌号信息" />
+        <input
+          v-model="form.address"
+          placeholder-style="color: #888"
+          placeholder="街道、楼牌号信息"
+        />
       </view>
       <view class="form-item">
         <text class="label">设置默认地址</text>
-        <switch color="#27ba9b" />
+        <switch
+          @change="isDefaultChange"
+          :checked="form.isDefault === 1"
+          color="#27ba9b"
+        />
       </view>
     </view>
     <!-- 提交按钮 -->
-    <view class="button">保 存</view>
+    <view @tap="submitForm" class="button">{{
+      addressId ? "保 存" : "新增"
+    }}</view>
   </view>
 </template>
 

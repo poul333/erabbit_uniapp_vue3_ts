@@ -1,60 +1,76 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { deleteMemberAddressById, getMemberAddress } from "@/apis/address";
+import { getMemberAddressItem } from "@/types/address";
+import { onShow } from "@dcloudio/uni-app";
+import { ref } from "vue";
 
 const list = ref([
   {
-    id: '1570666985186922497',
-    receiver: '苏东坡',
-    contact: '12345678910',
-    provinceCode: '110000',
-    cityCode: '110100',
-    countyCode: '110101',
-    address: '东城幼儿园',
+    id: "1570666985186922497",
+    receiver: "苏东坡",
+    contact: "12345678910",
+    provinceCode: "110000",
+    cityCode: "110100",
+    countyCode: "110101",
+    address: "东城幼儿园",
     isDefault: 1,
-    fullLocation: '北京北京市东城区',
+    fullLocation: "北京北京市东城区",
     postalCode: null,
     addressTags: null,
   },
   {
-    id: '1570667367564840961',
-    receiver: '苏南平',
-    contact: '13535337057',
-    provinceCode: '110000',
-    cityCode: '110100',
-    countyCode: '110101',
-    address: '吉山幼儿园',
+    id: "1570667367564840961",
+    receiver: "苏南平",
+    contact: "13535337057",
+    provinceCode: "110000",
+    cityCode: "110100",
+    countyCode: "110101",
+    address: "吉山幼儿园",
     isDefault: 0,
-    fullLocation: '广东省广州市天河区',
+    fullLocation: "广东省广州市天河区",
     postalCode: null,
     addressTags: null,
   },
   {
-    id: '1570676278636318722',
-    receiver: '苏希璐',
-    contact: '13345678901',
-    provinceCode: '110000',
-    cityCode: '110100',
-    countyCode: '110101',
-    address: '东城加油站',
+    id: "1570676278636318722",
+    receiver: "苏希璐",
+    contact: "13345678901",
+    provinceCode: "110000",
+    cityCode: "110100",
+    countyCode: "110101",
+    address: "东城加油站",
     isDefault: 0,
-    fullLocation: '北京北京市东城区',
+    fullLocation: "北京北京市东城区",
     postalCode: null,
     addressTags: null,
   },
   {
-    id: '1570711884447879169',
-    receiver: '苏北乔',
-    contact: '13535337057',
-    provinceCode: '440000',
-    cityCode: '440100',
-    countyCode: '440106',
-    address: '津安创意园',
+    id: "1570711884447879169",
+    receiver: "苏北乔",
+    contact: "13535337057",
+    provinceCode: "440000",
+    cityCode: "440100",
+    countyCode: "440106",
+    address: "津安创意园",
     isDefault: 0,
-    fullLocation: '广东省广州市天河区',
+    fullLocation: "广东省广州市天河区",
     postalCode: null,
     addressTags: null,
   },
-])
+]);
+
+const addressList = ref<getMemberAddressItem[]>([]);
+
+onShow(async () => {
+  addressList.value = await getMemberAddress();
+});
+
+// 删除
+const deleteAddress = async (id: string) => {
+  await deleteMemberAddressById(id);
+  uni.showToast({ title: "删除成功" });
+  addressList.value = await getMemberAddress();
+};
 </script>
 
 <template>
@@ -64,7 +80,7 @@ const list = ref([
       <view class="address">
         <uni-swipe-action>
           <uni-swipe-action-item
-            v-for="item in list"
+            v-for="item in addressList"
             :key="item.id"
             class="swipe-cell"
           >
@@ -72,7 +88,7 @@ const list = ref([
               <view class="user">
                 {{ item.receiver }}
                 <text>{{ item.contact }}</text>
-                <text class="badge"> 默认 </text>
+                <text v-if="item.isDefault === 1" class="badge"> 默认 </text>
               </view>
               <view class="locate">
                 {{ item.fullLocation }}{{ item.address }}
@@ -87,7 +103,9 @@ const list = ref([
             </view>
             <template v-slot:right>
               <view class="swipe-cell-action">
-                <button class="delete-button"> 删除 </button>
+                <button @tap="deleteAddress(item.id)" class="delete-button">
+                  删除
+                </button>
               </view>
             </template>
           </uni-swipe-action-item>

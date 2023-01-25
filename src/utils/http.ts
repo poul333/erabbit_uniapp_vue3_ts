@@ -64,7 +64,15 @@ export const http = <T>(options: UniApp.RequestOptions) => {
       ...options,
       // 成功
       success(res) {
-        resolve((res.data as ApiRes).result);
+        if (res.statusCode >= 200 && res.statusCode <= 300) {
+          resolve((res.data as ApiRes).result);
+        } else {
+          reject(res);
+          uni.showToast({
+            icon: "none",
+            title: (res.data as AnyObject).message,
+          });
+        }
       },
       // 失败
       fail(err) {
