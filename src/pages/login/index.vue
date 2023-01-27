@@ -33,7 +33,8 @@ const onGetphonenumberSimple = async () => {
   memberStore.setProfile(res);
   uni.showToast({ icon: "success", title: "登录成功" });
   // 页面跳转
-  uni.switchTab({ url: "/pages/my/index" });
+  // uni.switchTab({ url: "/pages/my/index" });
+  uni.navigateBack({});
 };
 </script>
 
