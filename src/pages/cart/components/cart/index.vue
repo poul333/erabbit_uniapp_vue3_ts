@@ -163,6 +163,15 @@ const selectedCartsPrice = computed(() => {
 const selectedCartsCount = computed(() => {
   return selectedCarts.value.reduce((sum, v) => v.count + sum, 0);
 });
+
+// 跳转到订单页
+const goToOrderCreate = () => {
+  if (selectedCartsCount.value === 0)
+    return uni.showToast({ icon: "none", title: "请选择商品" });
+  uni.navigateTo({
+    url: "/pages/order/create/index",
+  });
+};
 </script>
 
 <template>
@@ -255,7 +264,10 @@ const selectedCartsCount = computed(() => {
     <text class="amount">{{ selectedCartsPrice }}.00</text>
     <!-- 操作按钮 -->
     <view class="buttons">
-      <view class="button payment" @tap="goPay"
+      <view
+        class="button payment"
+        :class="{ disabled: selectedCartsCount === 0 }"
+        @tap="goToOrderCreate"
         >去结算({{ selectedCartsCount }})</view
       >
       <view class="button collect">移入收藏</view>

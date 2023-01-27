@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { deleteMemberAddressById, getMemberAddress } from "@/apis/address";
+import { useAddressStore } from "@/store/address";
 import { getMemberAddressItem } from "@/types/address";
-import { onShow } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { ref } from "vue";
 
 const list = ref([
@@ -71,6 +72,26 @@ const deleteAddress = async (id: string) => {
   uni.showToast({ title: "删除成功" });
   addressList.value = await getMemberAddress();
 };
+
+// 记录跳转来源页
+// const formPage = ref("");
+// onLoad(({ form }) => {
+//   if (form) {
+//     formPage.value = form;
+//   }
+// });
+const { form } = defineProps<{
+  form: string;
+}>();
+
+const addressStore = useAddressStore();
+// 选择收货地址
+const changeAddress = (item: getMemberAddressItem) => {
+  if (form === "order") {
+    addressStore.changeSelectAddress(item);
+    uni.navigateBack({});
+  }
+};
 </script>
 
 <template>
@@ -84,7 +105,7 @@ const deleteAddress = async (id: string) => {
             :key="item.id"
             class="swipe-cell"
           >
-            <view class="item">
+            <view class="item" @tap="changeAddress(item)">
               <view class="user">
                 {{ item.receiver }}
                 <text>{{ item.contact }}</text>
