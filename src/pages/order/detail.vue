@@ -1,27 +1,54 @@
 <script setup lang="ts">
-import { toRefs, getCurrentInstance } from 'vue'
-import { onReady } from '@dcloudio/uni-app'
-import useAppStore from '@/store'
-import guess from '@/components/guess/index.vue'
+import { toRefs, getCurrentInstance, ref } from "vue";
+import { onLoad, onReady } from "@dcloudio/uni-app";
+import useAppStore from "@/store";
+import guess from "@/components/guess/index.vue";
+import { getMemberOrderById } from "@/apis/order";
+import { GetMemberOrderByIdResult } from "@/types/order";
+import { OrderState, PayChannel, PayType } from "@/enums";
+import { unix } from "dayjs";
 
-const appStore = useAppStore()
-const { safeArea, platform } = toRefs(appStore)
+const appStore = useAppStore();
+const { safeArea, platform } = toRefs(appStore);
 
-const pageInstance: any = getCurrentInstance()
+const pageInstance: any = getCurrentInstance();
 
 onReady(() => {
   pageInstance.ctx.$scope.animate(
-    '.navbar .title',
+    ".navbar .title",
     [{ opacity: 0 }, { opacity: 1 }],
     600,
     {
-      scrollSource: '#scrollView',
+      scrollSource: "#scrollView",
       timeRange: 600,
       startScrollOffset: 0,
       endScrollOffset: 120,
-    },
-  )
-})
+    }
+  );
+});
+
+// -------------------------------
+const order = ref({} as GetMemberOrderByIdResult);
+onLoad(async ({ id }) => {
+  if (id) {
+    order.value = await getMemberOrderById(id);
+    // 当前订单是否处于待付款状态
+    if (order.value.orderState === OrderState.DaiFuKuan) {
+      // 开启定时器
+      let timerId = setInterval(() => {
+        // 秒数减少
+        order.value.countdown--;
+        // 如果倒计时结束
+        if (order.value.countdown < 0) {
+          // 清理定时器
+          clearInterval(timerId);
+          // 本地更新订单状态
+          order.value.orderState = OrderState.YiQuXiao;
+        }
+      }, 1000);
+    }
+  }
+});
 </script>
 
 <template>
@@ -41,16 +68,35 @@ onReady(() => {
   >
     <!-- 订单状态 -->
     <view class="overview" :style="{ paddingTop: safeArea!.top + 40 + 'px' }">
-      <view class="status icon-clock">等待付款</view>
-      <view class="tips">
-        <text>应付金额: ¥90:00</text>
-        <text class="countdown">支付剩余23时57分42秒</text>
-      </view>
-      <view class="button">去支付</view>
+      <template v-if="order.orderState === OrderState['DaiFuKuan']">
+        <view class="status icon-clock">等待付款</view>
+        <view class="tips">
+          <text>应付金额: ¥90:00</text>
+          <text class="countdown"
+            >支付剩余{{ unix(order.countdown).format("mm分ss秒") }}</text
+          >
+        </view>
+        <view class="button">去支付</view>
+      </template>
+      <template v-if="order.orderState === OrderState['YiQuXiao']">
+        <view class="status icon-clock">已取消</view>
+      </template>
+      <template v-if="order.orderState === OrderState['YiWanCheng']">
+        <view class="status icon-clock">已完成</view>
+      </template>
+      <template v-if="order.orderState === OrderState['DaiShouHuo']">
+        <view class="status icon-clock">待收货</view>
+      </template>
+      <template v-if="order.orderState === OrderState['DaiFaHuo']">
+        <view class="status icon-clock">待发货</view>
+      </template>
+      <template v-if="order.orderState === OrderState['DaiPingJia']">
+        <view class="status icon-clock">待评价</view>
+      </template>
     </view>
 
     <!-- 配送状态 -->
-    <view class="shipment">
+    <view class="shipment" v-if="order.orderState === OrderState['DaiShouHuo']">
       <!-- 物流信息 -->
       <navigator
         class="logistics"
@@ -72,120 +118,50 @@ onReady(() => {
     <!-- 商品信息 -->
     <view class="goods">
       <view class="item">
-        <navigator hover-class="none">
-          <image
-            class="cover"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-          ></image>
+        <navigator
+          v-for="item in order.skus"
+          :key="item.id"
+          :url="`/pages/goods/index?id=${item.spuId}`"
+          hover-class="none"
+        >
+          <image class="cover" :src="item.image"></image>
           <view class="meta">
-            <view class="name ellipsis"
-              >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-              非接触式红外体温仪</view
-            >
-            <view class="type">白色 全自动充电</view>
+            <view class="name ellipsis">{{ item.name }}</view>
+            <view class="type">{{ item.attrsText }}</view>
             <view class="price">
               <view class="original">
                 <text class="symbol">¥</text>
-                <text>129</text>
-                <text>.04</text>
+                <text>{{ item.curPrice }}</text>
               </view>
               <view class="actual">
                 <text class="text">实付: </text>
                 <text class="symbol">¥</text>
-                <text>129</text>
-                <text>.04</text>
+                <text>{{ item.realPay }}</text>
               </view>
             </view>
-            <view class="quantity">x1</view>
+            <view class="quantity">x{{ item.quantity }}</view>
           </view>
         </navigator>
-        <view class="action">
+        <view class="action" v-if="order.orderState === OrderState.YiWanCheng">
           <view class="button primary">申请售后</view>
-          <navigator url="/pages/comments/publish/index" class="button"
-            >去评价</navigator
-          >
-        </view>
-      </view>
-      <view class="item">
-        <navigator hover-class="none">
-          <image
-            class="cover"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-          ></image>
-          <view class="meta">
-            <view class="name ellipsis"
-              >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-              非接触式红外体温仪</view
-            >
-            <view class="type">白色 全自动充电</view>
-            <view class="price">
-              <view class="original">
-                <text class="symbol">¥</text>
-                <text>129</text>
-                <text>.04</text>
-              </view>
-              <view class="actual">
-                <text class="text">实付: </text>
-                <text class="symbol">¥</text>
-                <text>129</text>
-                <text>.04</text>
-              </view>
-            </view>
-            <view class="quantity">x1</view>
-          </view>
-        </navigator>
-      </view>
-      <view class="item">
-        <navigator hover-class="none">
-          <image
-            class="cover"
-            src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-          ></image>
-          <view class="meta">
-            <view class="name ellipsis"
-              >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-              非接触式红外体温仪</view
-            >
-            <view class="type">白色 全自动充电</view>
-            <view class="price">
-              <view class="original">
-                <text class="symbol">¥</text>
-                <text>129</text>
-                <text>.04</text>
-              </view>
-              <view class="actual">
-                <text class="text">实付: </text>
-                <text class="symbol">¥</text>
-                <text>129</text>
-                <text>.04</text>
-              </view>
-            </view>
-            <view class="quantity">x1</view>
-          </view>
-        </navigator>
-        <view class="action">
-          <view class="button primary">申请售后</view>
-          <navigator
-            class="button"
-            hover-class="none"
-            url="/pages/comments/publish/index"
-            >去评价</navigator
-          >
+          <navigator url="/pages/comments/publish/index" class="button">
+            去评价
+          </navigator>
         </view>
       </view>
       <!-- 合计 -->
       <view class="total">
         <view class="row">
           <view class="text">商品总价: </view>
-          <view class="symbol">129.04</view>
+          <view class="symbol">{{ order.totalMoney }}</view>
         </view>
         <view class="row">
           <view class="text">运费: </view>
-          <view class="symbol">10.00</view>
+          <view class="symbol">{{ order.postFee }}</view>
         </view>
         <view class="row paid">
           <view class="text">实付: </view>
-          <view class="symbol primary">139.04</view>
+          <view class="symbol primary">{{ order.payMoney }}</view>
         </view>
       </view>
     </view>
@@ -194,10 +170,14 @@ onReady(() => {
     <view class="detail">
       <view class="title">订单信息</view>
       <view class="row">
-        <view>订单编号: 838558731208</view>
-        <view>下单时间: 2020-12-12 23:59:59</view>
-        <view>支付方式: 在线支付</view>
-        <view>支付渠道: 微信支付</view>
+        <view>订单编号: {{ order.id }}</view>
+        <view>下单时间: {{ order.createTime }}</view>
+        <view v-if="order.payType === PayType.Online">
+          支付方式: 在线支付
+        </view>
+        <view v-if="order.payChannel == PayChannel.WxPay">
+          支付渠道: 微信支付
+        </view>
       </view>
     </view>
 
@@ -382,8 +362,8 @@ page {
   top: 50%;
 
   transform: translateY(-50%);
-  content: '\e6c2';
-  font-family: 'erabbit' !important;
+  content: "\e6c2";
+  font-family: "erabbit" !important;
   font-size: 32rpx;
   color: #666;
 }
@@ -518,7 +498,7 @@ page {
 }
 
 .goods .total .symbol::before {
-  content: '¥';
+  content: "¥";
   font-size: 20rpx;
 }
 

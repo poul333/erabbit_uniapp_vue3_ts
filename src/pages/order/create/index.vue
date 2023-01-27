@@ -2,7 +2,11 @@
 import { Ref, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import layer from "./layer.vue";
-import { getMemberOrderPre, postMemberOrder } from "@/apis/order";
+import {
+  getMemberOrderPre,
+  getMemberOrderPreNow,
+  postMemberOrder,
+} from "@/apis/order";
 import { GetMemberOrderPreResult } from "@/types/order";
 import { useAddressStore } from "@/store/address";
 import { getMemberAddressItem } from "@/types/address";
@@ -58,9 +62,20 @@ const goPayment = () => {
 };
 
 // ------------------------
+const { skuId } = defineProps<{
+  skuId: string;
+  count: number;
+  addressId: string;
+}>();
 const orderPre = ref({} as GetMemberOrderPreResult);
-onLoad(async () => {
-  orderPre.value = await getMemberOrderPre();
+onLoad(async (data) => {
+  if (skuId) {
+    // 如果有页面参数，调用立即购买
+    orderPre.value = await getMemberOrderPreNow(data as any);
+  } else {
+    // 没有页面参数，普通预付订单
+    orderPre.value = await getMemberOrderPre();
+  }
 });
 
 const addressStore = useAddressStore();
@@ -68,11 +83,13 @@ const { selectAddress } = storeToRefs(addressStore);
 
 // 提交订单
 const submitForm = async () => {
-  // 获取收货地址
+  // 从 Store 中获取选中的收货地址
   const addressId = selectAddress.value.id;
-  // 如果没有收货地址id，退出
-  if (!addressId)
-    return uni.showToast({ icon: "none", title: "请选择收货地址" });
+  // 如果没有收货地址
+  if (!addressId) {
+    // 退出函数并弹窗提示
+    return uni.showToast({ icon: "none", title: "请选择收货地址~" });
+  }
   // 调用创建订单的接口，获取订单id
   const { id } = await postMemberOrder({
     goods: orderPre.value.goods.map((v) => ({
@@ -85,7 +102,7 @@ const submitForm = async () => {
     payChannel: 2,
     buyerMessage: "",
   });
-  //  进行页面跳转
+  // 跳转到订单详情页，并传递订单id
   uni.navigateTo({ url: `/pages/order/detail?id=${id}` });
 };
 </script>
@@ -164,15 +181,24 @@ const submitForm = async () => {
     <view class="settlement">
       <view class="item">
         <text class="text">商品总价: </text>
-        <text class="number"> <text class="symbol">¥</text>129.04 </text>
+        <text class="number">
+          <text class="symbol">¥</text>
+          {{ orderPre.summary?.totalPrice.toFixed(2) }}
+        </text>
       </view>
       <view class="item">
         <text class="text">运费: </text>
-        <text class="number"> <text class="symbol">¥</text>10.00 </text>
+        <text class="number">
+          <text class="symbol">¥</text>
+          {{ orderPre.summary?.postFee.toFixed(2) }}
+        </text>
       </view>
       <view class="item">
         <text class="text">折扣: </text>
-        <text class="number danger"> <text class="symbol">-¥</text>30.00 </text>
+        <text class="number danger">
+          <text class="symbol">-¥</text>
+          {{ orderPre.summary?.discountPrice }}
+        </text>
       </view>
     </view>
     <view class="gap"></view>
@@ -181,8 +207,9 @@ const submitForm = async () => {
   <view class="toolbar">
     <view class="amount">
       <text class="symbol">¥</text>
-      <text class="number">266</text>
-      <text class="decimal">.00</text>
+      <text class="number">{{
+        orderPre.summary?.totalPayPrice.toFixed(2)
+      }}</text>
     </view>
     <view @tap="submitForm" class="button">提交订单</view>
   </view>

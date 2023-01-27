@@ -12,6 +12,7 @@ import XtxBack from "@/components/XtxBack.vue";
 import skeleton from "@/pages/goods/components/skeleton/index.vue";
 import { GoodsSku, SkuEvent } from "@/components/vk-data-goods-sku-popup/types";
 import { postMemberCart } from "@/apis/cart";
+import { useAddressStore } from "@/store/address";
 
 const appStore = useAppStore();
 const safeArea = toRef(appStore, "safeArea");
@@ -132,9 +133,20 @@ const onAddCart = async (ev: SkuEvent) => {
   // 用于显示商品页选择规格
   // selectArrText.value = skuRef?.value.selectArr.join(" ");
 };
+
+const addressStore = useAddressStore();
 // 立即购买
 const onBuyNow = (ev: SkuEvent) => {
-  console.log("买", ev);
+  // 获取立即购买接口所需的 3 的参数，用于页面传参
+  const skuId = ev._id;
+  const count = ev.buy_num;
+  const addressId = addressStore.selectAddress.id;
+  // 多个页面参数需要通过 & 链接，格式 ?key=value&key2=value2
+  uni.navigateTo({
+    url: `/pages/order/create?skuId=${skuId}&count=${count}&addressId=${addressId}`,
+  });
+  // 关闭 SKU 组件
+  isShowSku.value = false;
 };
 </script>
 

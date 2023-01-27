@@ -21,6 +21,7 @@ specifiers:
   '@types/wechat-miniprogram': ^3.4.1
   commitizen: ^4.2.4
   cz-conventional-changelog: ^3.3.0
+  dayjs: ^1.11.7
   husky: ^8.0.0
   pinia: ^2.0.14
   pinia-plugin-persistedstate: ^3.0.2
@@ -45,6 +46,7 @@ dependencies:
   '@dcloudio/uni-mp-weixin': 3.0.0-alpha-3041020220516002_vue@3.2.40
   '@dcloudio/uni-quickapp-webview': 3.0.0-alpha-3041020220516002_vue@3.2.40
   '@dcloudio/uni-ui': 1.4.22
+  dayjs: 1.11.7
   pinia: 2.0.23_bfjwoga25wxjazzogo7o372nwq
   pinia-plugin-persistedstate: 3.0.2_pinia@2.0.23
   vue: 3.2.40
@@ -1791,6 +1793,10 @@ packages:
       - '@swc/core'
       - '@swc/wasm'
     dev: true
+
+  /dayjs/1.11.7:
+    resolution: {integrity: sha512-+Yw9U6YO5TQohxLcIkrXBeY73WP3ejHWVvx8XCk3gxvQDCTEmS48ZrSZCKciI7Bhl/uCMyxYtE9UqRILmFphkQ==}
+    dev: false
 
   /debug/2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
