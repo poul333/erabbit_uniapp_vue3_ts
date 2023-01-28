@@ -7,6 +7,7 @@ import { getMemberOrderById } from "@/apis/order";
 import { GetMemberOrderByIdResult } from "@/types/order";
 import { OrderState, PayChannel, PayType } from "@/enums";
 import { unix } from "dayjs";
+import { getPayMock } from "@/apis/pay";
 
 const appStore = useAppStore();
 const { safeArea, platform } = toRefs(appStore);
@@ -49,6 +50,17 @@ onLoad(async ({ id }) => {
     }
   }
 });
+
+// 订单支付
+const orderPay = async () => {
+  // 模拟支付-更新订单支付状态
+  await getPayMock(order.value.id);
+  uni.showToast({ icon: "success", title: "支付成功" });
+  // 跳转支付成功页
+  setTimeout(() => {
+    uni.navigateTo({ url: "/pages/order/payment" });
+  }, 1000);
+};
 </script>
 
 <template>
@@ -76,7 +88,7 @@ onLoad(async ({ id }) => {
             >支付剩余{{ unix(order.countdown).format("mm分ss秒") }}</text
           >
         </view>
-        <view class="button">去支付</view>
+        <view @tap="orderPay" class="button">去支付</view>
       </template>
       <template v-if="order.orderState === OrderState['YiQuXiao']">
         <view class="status icon-clock">已取消</view>
@@ -186,7 +198,7 @@ onLoad(async ({ id }) => {
   </scroll-view>
 
   <view class="toobar">
-    <view class="primary">去支付</view>
+    <view class="primary" @tap="orderPay">去支付</view>
     <view class="default">取消订单</view>
   </view>
 

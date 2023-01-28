@@ -8,6 +8,7 @@ export enum OrderState {
   DaiPingJia = 4,
   YiWanCheng = 5,
   YiQuXiao = 6,
+  QuanBu = 0,
 }
 
 /**

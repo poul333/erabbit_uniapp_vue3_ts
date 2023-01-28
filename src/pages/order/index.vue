@@ -1,44 +1,105 @@
 <script setup lang="ts">
-import { toRef } from 'vue'
-import useAppStore from '@/store'
+import { ref, toRef } from "vue";
+import useAppStore from "@/store";
+import { onLoad } from "@dcloudio/uni-app";
+import { getMemberOrderList } from "@/apis/order";
+import { GetMemberOrderListResult } from "@/types/order";
 
-const appStore = useAppStore()
-const safeArea = toRef(appStore, 'safeArea')
+const appStore = useAppStore();
+const safeArea = toRef(appStore, "safeArea");
 
-let swiperIndex = $ref<string | number>(0)
-let adjustIndex = $ref<string | number>(0)
-let cursorLeft = $ref<string>('0%')
+let swiperIndex = $ref<string | number>(0);
+let adjustIndex = $ref<string | number>(0);
+let cursorLeft = $ref<string>("0%");
 
 const changeTab = (ev: any) => {
   // 获取当前 swiperItem 的索引值值
-  let { index } = ev.target.dataset
-  if (ev.detail.currentItemId) index = ev.detail.currentItemId
+  let { index } = ev.target.dataset;
+  if (ev.detail.currentItemId) index = ev.detail.currentItemId;
   // 切换不同的 swiperItem
-  swiperIndex = index
-}
+  swiperIndex = index;
+};
 
 const onFinish = () => {
   // 控制索引值改变的顺序
-  adjustIndex = swiperIndex
-}
+  adjustIndex = swiperIndex;
+};
 
 const onTransition = (ev: WechatMiniprogram.SwiperTransition) => {
   // 获取动画相关参数
-  const current = parseInt(ev.target.dataset.current)
-  const dx = ev.detail.dx
+  const current = parseInt(ev.target.dataset.current);
+  const dx = ev.detail.dx;
 
-  cursorLeft = (current + dx / safeArea.value!.width) * 20 + '%'
-}
+  cursorLeft = (current + dx / safeArea.value!.width) * 20 + "%";
+};
+
+// ------------------------
+const orderTabs = ref([
+  {
+    orderState: 0,
+    title: "全部",
+  },
+  {
+    orderState: 1,
+    title: "待付款",
+  },
+  {
+    orderState: 2,
+    title: "待发货",
+  },
+  {
+    orderState: 3,
+    title: "待收货",
+  },
+  {
+    orderState: 4,
+    title: "待评价",
+  },
+]);
+const orders = ref({} as GetMemberOrderListResult);
+const orderList = ref<GetMemberOrderListResult[]>([]);
+onLoad(async () => {
+  // orders.value = await getMemberOrderList({
+  //   page: 1,
+  //   pageSize: 10,
+  //   orderState: 0,
+  // });
+  loadOrderList();
+});
+
+const activeIndex = ref(0);
+const loadOrderList = async () => {
+  orderList.value[activeIndex.value] = await getMemberOrderList({
+    page: 1,
+    pageSize: 10,
+    orderState: activeIndex.value,
+  });
+};
+
+// 点击切换
+const changeTabs = (index: number) => {
+  activeIndex.value = index;
+  loadOrderList();
+};
+
+// 滑动切换
+const swiperChange = (ev: WechatMiniprogram.SwiperChange) => {
+  activeIndex.value = ev.detail.current;
+  loadOrderList();
+};
 </script>
 
 <template>
   <view class="viewport">
     <view class="tabs" @tap="changeTab">
-      <text data-index="0">全部</text>
-      <text data-index="1">待付款</text>
-      <text data-index="2">待发货</text>
-      <text data-index="3">待收货</text>
-      <text data-index="4">待评价</text>
+      <text
+        v-for="(item, index) in orderTabs"
+        :key="item.title"
+        :data-index="index"
+        @tap="changeTabs(index)"
+      >
+        {{ item.title }}
+      </text>
       <!-- 游标 -->
       <view class="cursor" :style="{ left: cursorLeft }"></view>
     </view>
@@ -46,722 +107,73 @@ const onTransition = (ev: WechatMiniprogram.SwiperTransition) => {
       class="orders"
       :data-current="adjustIndex"
       :duration="200"
-      :current="swiperIndex"
-      @change="changeTab"
+      :current="activeIndex"
+      @change="swiperChange"
       @animationfinish="onFinish"
       @transition="onTransition"
     >
-      <swiper-item item-id="0">
+      <swiper-item v-for="(orders, index) in orderList" :key="index">
         <scroll-view enhanced scroll-y :show-scrollbar="false">
-          <view class="card">
+          <view class="card" v-for="item in orders.items" :key="item.id">
             <!-- 订单相关 -->
             <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
+              <text class="date">{{ item.createTime }}</text>
+              <!--
+                🔔 常量取值
+              -->
+              <text>{{ item.orderState }}</text>
               <text class="icon-delete"></text>
             </view>
             <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
+            <navigator
+              v-for="sku in item.skus"
+              :key="sku.id"
+              class="goods"
+              :url="`/pages/order/detail?id=${item.id}`"
+              hover-class="none"
+            >
               <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
+                <image :src="sku.image"></image>
               </view>
               <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
+                <view class="name ellipsis">{{ sku.name }}</view>
+                <view class="type">{{ sku.attrsText }}</view>
               </view>
             </navigator>
             <!-- 支付信息 -->
             <view class="payment">
-              <text class="quantity">共1件商品</text>
+              <text class="quantity">共{{ item.totalNum }}件商品</text>
               <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
+              <text class="amount">
+                <text class="symbol">¥</text>{{ item.payMoney }}</text
+              >
             </view>
             <!-- 订单操作 -->
             <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">取消订单</view>
+              <view v-if="item.orderState >= 5" class="button primary">
+                再次购买
+              </view>
+              <navigator
+                :url="`/pages/order/detail?id=${item.id}`"
+                v-if="item.orderState === 1"
+                class="button primary"
+              >
+                去付款
+              </navigator>
+              <view v-if="item.orderState === 3" class="button primary">
+                确认收货
+              </view>
+              <view v-if="item.orderState < 3" class="button">取消订单</view>
+              <template v-if="item.orderState > 4">
+                <view v-if="item.orderState === 5" class="button primary">
+                  去评价
+                </view>
+                <view class="button">删除订单</view>
+              </template>
             </view>
           </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
-              <text class="icon-delete"></text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="more">查看更多</view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共3件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">去评价</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
-              <text class="icon-delete"></text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-                <text class="quantity">x2</text>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共3件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">去评价</view>
-            </view>
-          </view>
-        </scroll-view>
-      </swiper-item>
-      <swiper-item item-id="1">
-        <scroll-view enhanced scroll-y :show-scrollbar="false">
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
-              <text class="icon-delete"></text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
-              <text class="icon-delete"></text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="more">查看更多</view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共3件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">去评价</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-        </scroll-view>
-      </swiper-item>
-      <swiper-item item-id="2">
-        <scroll-view enhanced scroll-y :show-scrollbar="false">
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="more">查看更多</view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共3件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-        </scroll-view>
-      </swiper-item>
-      <swiper-item item-id="3">
-        <scroll-view enhanced scroll-y :show-scrollbar="false">
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
-              <text class="icon-delete"></text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
-              <text class="icon-delete"></text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="more">查看更多</view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共3件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">去评价</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-        </scroll-view>
-      </swiper-item>
-      <swiper-item item-id="4">
-        <scroll-view enhanced scroll-y :show-scrollbar="false">
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
-              <text class="icon-delete"></text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">取消订单</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text>已完成</text>
-              <text class="icon-delete"></text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_6.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_7.jpg"
-                ></image>
-                <text class="quantity">x1</text>
-              </view>
-              <view class="more">查看更多</view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共3件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">再次购买</view>
-              <view class="button">去评价</view>
-            </view>
-          </view>
-          <view class="card">
-            <!-- 订单相关 -->
-            <view class="status">
-              <text class="date">2019-07-02 18:03:06</text>
-              <text class="primary">待付款</text>
-            </view>
-            <!-- 商品信息 -->
-            <navigator class="goods" url="./detail/index" hover-class="none">
-              <view class="cover">
-                <image
-                  src="https://pcapi-xiaotuxian-front-devtest.itheima.net/miniapp/uploads/goods_big_5.jpg"
-                ></image>
-              </view>
-              <view class="meta">
-                <view class="name ellipsis"
-                  >康尔贝 非接触式红外体温仪 领券立减30元 婴儿级材质 测温 康尔贝
-                  非接触式红外体温仪</view
-                >
-                <view class="type">白色 全自动充电</view>
-              </view>
-            </navigator>
-            <!-- 支付信息 -->
-            <view class="payment">
-              <text class="quantity">共1件商品</text>
-              <text>实付</text>
-              <text class="amount"> <text class="symbol">¥</text>129.04 </text>
-            </view>
-            <!-- 订单操作 -->
-            <view class="action">
-              <view class="button primary">取消订单</view>
-            </view>
-          </view>
+          <!-- 样式美化 -->
+          <view class="blank" v-if="orders.items.length === 0">暂无数据~</view>
         </scroll-view>
       </swiper-item>
     </swiper>
@@ -806,7 +218,7 @@ page {
   bottom: 20rpx;
 
   display: block;
-  content: '';
+  content: "";
   width: 20%;
   height: 4rpx;
   padding: 0 50rpx;
